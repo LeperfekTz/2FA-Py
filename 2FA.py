@@ -1,24 +1,40 @@
-import time 
+import time
 import pyotp
 import qrcode
 
+def gera_chave_mestre():
+    """Gera uma chave mestre aleatória usando pyotp"""
+    return pyotp.random_base32()
 
-# print(pyotp.random_base32())
-# gera um código aleatório
+def gera_codigo(chave_mestre):
+    """Gera um código TOTP baseado na chave mestre"""
+    return pyotp.TOTP(chave_mestre).now()
 
-chave_mestre = "TDYHCEJMCUNG23BQQI3RBWCEVNZC67T2"
+def verifica_codigo(chave_mestre, codigo_usuario):
+    """Verifica se o código TOTP fornecido pelo usuário é válido"""
+    return pyotp.TOTP(chave_mestre).verify(codigo_usuario)
 
-codigo = pyotp.TOTP(chave_mestre)
-# ele pega uma combinação de 6 digitos e gera um codigo aleatorio com base na chave mestre
-print(codigo.now())
-# gera o codigo aleatorio de 30 em 30 sec
+def gera_qrcode(chave_mestre, name, issuer_name):
+    """Gera um QRCode contendo o link de provisionamento para aplicativos de autenticação"""
+    link = pyotp.TOTP(chave_mestre).provisioning_uri(name=name, issuer_name=issuer_name)
+    qrcode.make(link).save("qrcode.png")
 
-codigo_usuario = input("Digite o codigo: ")
-print(codigo.verify(codigo_usuario))
-# verifica se o codigo digitado é valido comparando com chave com codigo_usuario
+if __name__ == "__main__":
+    # Gera uma nova chave mestre
+    chave_mestre = gera_chave_mestre()
+    print("Chave Mestre:", chave_mestre)
 
+    # Gera um código TOTP baseado na chave mestre
+    codigo = gera_codigo(chave_mestre)
+    print("Código TOTP:", codigo)
 
-# QRCode
-link = pyotp.TOTP(chave_mestre).provisioning_uri(name="Leo", issuer_name="Teste de 2FA")
+    # Solicita ao usuário que insira o código TOTP para verificação
+    codigo_usuario = input("Digite o código: ")
+    if verifica_codigo(chave_mestre, codigo_usuario):
+        print("Código verificado com sucesso!")
+    else:
+        print("Código inválido!")
 
-qrcode.make(link).save("qrcode.png")
+    # Gera um QRCode para o link de provisionamento
+    gera_qrcode(chave_mestre, name="Leo", issuer_name="Teste de 2FA")
+    print("QRCode gerado e salvo como 'qrcode.png'.")
